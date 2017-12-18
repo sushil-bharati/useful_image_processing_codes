@@ -1,0 +1,31 @@
+1. open nomachine client
+2. log in using ittc username and pass (login1.ittc.ku.edu , port: 22)
+3. open a terminal
+4. type "module load slurm-torque" to load slurm cluster
+5. type "module load MATLAB" to load latest MATLAB in the node
+5. type "srun.x11 -c 4 --mem=2GB -C avx -t 48:00:00" to get a new node
+6. type "matlab" to instantiate matlab in this node
+
+type "squeue -u <username>" to view submitted task progress
+
+NOTE: You can ask for multiple nodes in different terminals and run matlab instances.
+
+
+-------------------
+CREATE A BASH FILE AS '<filename>.sh'
+ans submit using 'sbatch <filename>.sh'
+
+#!/bin/bash
+#SBATCH -p intel
+#SBATCH -N 1
+#SBATCH -n 1
+#SBATCH -c 16
+#SBATCH --mem=4GB
+#SBATCH -t 48:00:00 
+#SBATCH -J jobname
+#SBATCH -o slurm-%j.out
+
+module load MATLAB/2017b
+matlab -r <matlab_file_without_m>
+ 
+echo "Job ${SLURM_JOB_ID} ran on ${HOSTNAME}"

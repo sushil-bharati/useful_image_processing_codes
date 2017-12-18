@@ -1,0 +1,23 @@
+1. ssh -X login1
+2. module load slurm-torque
+3. srun.x11 -p gpu --gres=gpu:k20:2 -c 8 mem=16gb --pty /bin/bash
+4. module load cuDNN/6.0-CUDA-8.0.44
+5. source /scratch/sushnasa/tensorflow/bin/activate
+<6. migrate to dir>
+7. python <filename>.py
+
+-------------------
+
+ssh g002
+nvidia-smi
+
+
+-----------
+
+squeue -l | grp g0
+scontrol show job <jobid>
+
+-------------------
+
+echo $CUDA_VISIBLE_DEVICES 
+

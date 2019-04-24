@@ -1,0 +1,61 @@
+# Setting up your github 
+git config --global color.ui auto 
+git config --global merge.conflictstyle diff3 
+git config --list 
+
+# Atom editor setup 
+git config --global core.editor "atom --wait" -> sets up your editor for writing commit text before committing a file to git
+
+# Useful commands 
+git status -> displays status of current repo 
+
+git log -> displays detailed description of changes made in repo (Use up or down key to navigate) 'f' key could be handy to move down a screen size 
+git log --oneline -> displays one line description of the changes made in repo
+git log --stat -> displays # lines changed status of the file in repo 
+git log --patch -> displays changed lines with - (in older version) and + (in new version)
+
+git show -> shows most recent commit to repo 
+git show <sha> -> shows detail of commits belonging to provided sha 
+
+git add <file1> <file2> ... <filen> -> adds file(s) to staging index 
+git rm --cached <file> -> removes file from staging index 
+git add . -> period(.) stands for current directories and files (nesting allowed)
+
+git commit -m "message" -> bypasses editor and commits files to git with commit message 
+
+"Good commit summary"
+## Do
+
+do keep the message short (less than 60-ish characters)
+do explain what the commit does (not how or why!)
+be consistent in how you write your commit messages!
+"This commit will...". However, you finish that phrase, use that as your commit message.
+
+## Do not
+
+do not explain why the changes are made (more on this below)
+do not explain how the changes are made (that's what git log -p is for!)
+do not use the word "and"
+if you have to use "and", your commit message is probably doing too many changes - break the changes into separate commits
+e.g. "make the background color pink and increase the size of the sidebar"
+
+git diff -> shows changes that is yet to commit 
+
+.gitignore -> add project file to this file to ignore committing (globbing allowed)
+
+git tag -a <tag> [sha] -> creates annotated tag for a particular commit with optional sha
+git tag -d <tag> -> deletes a tag 
+
+git branch <branch> -> creates a side branch on existing repo 
+git checkout <branch> -> changes header to branch and filesystem is copied from this branch to system 
+git branch -d <branch> -> deletes branch if no unique commits on it (from other branches)
+git branch -D <branch> -> force deletes branch 
+
+git merge <branch> -> merges branch to head branch 
+git reset --hard HEAD^ -> undo merging 
+
+
+
+
+
+

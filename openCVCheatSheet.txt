@@ -1,0 +1,211 @@
+﻿"Basics"
+import cv2 -> Imports opencv
+import numpy as np-> imports numpy as alias 'np'
+from matplotlib import pyplot as plt -> imports pyplor t as alias 'plt'
+input = cv2.imread('image.jpg') -> reads an image to input variable
+grayinput = cv2.imread('image.jpg',0) -> reads an image, converts to grayscale to input variable
+cv2.imshow('Input image', input) -> shows an image in a named window
+waitKey() -> waits till key is pressed
+waitKey(1) -> waits for 1 ms
+destroyAllWindows() -> closes all opened windows
+
+
+
+"Numpy Noobies"
+input.shape -> returns all the dimensions of input
+input.shape[1] -> number of rows
+
+
+
+"Color Filters"
+grayinput = cv2.cvtColor(input,cv2.CV2_BGR2GRAY) -> converts BGR color image to grayscale image
+B,G,R = cv2.split(input) -> splits the color channels in an image
+out = cv2.merge([B,G,R]) -> merges color channels in an image
+outenhanced = cv2.merge([B,G+50,R])  -> enhances green channel of an image
+zeros (input.shape[:2], dtype='uint8') or zeros (input.shape[:2], np.uint8)  -> get a black image of input image size wxh
+cv2.imshow("Only red channel", cv2.merge([zeros, zeros, R])) -> displays only red channel
+
+
+
+"Histograms"
+image.ravel() -> flattens the image array
+
+
+-> To show a histogram of Blue channel index=0, one may use
+plt.hist(image.ravel(), [0], None, [256], [0, 256])
+plt.show()
+
+
+The following code plots histogram of all the colors in BGR image
+color = ('b','g','r')
+for i, col in enumerate(color):
+        histogram = cv2.calcHist([input], [i], None, [256], [0, 256]) -> calcHist([image], [channels], mask, [histSize], [range])
+    plt.plot(histogram, color = col)
+        plt.xlim[0,256]
+plt.show()
+
+
+"Drawing in images"
+blank = np.zeros((255,255), np.uint8) -> creates a blank image of size 255x255
+cv2.line(blank, (0,0), (255,255), (255,0,0), 4) -> creates a blue line from 0,0 to 255,255 of 4px thick
+cv2.rectangle(blank, (0,0), (10,10), (0,255,0), -1) -> creates a 3px wide 10x10 green filled rectangle
+cv2.circle(blank, (5,5), 9, (0,0,255), 2) -> creates a 2px wide red circle having radius 9 centered at 5,5
+cv2.polylines(blank, pts.reshape((-1,1,2)), True, (0,255,0), 3) -> draws a unfilled (True) green polylines 3px wide for given array of pts
+cv2.ellipse(image, center, axes, angle, startAngle, endAngle, color, thickness) -> draws an ellipse
+Ex: cv2.ellipse(blank, (150,150), (150,150), 30, 0, 180, 255, -1)
+cv2.putText(blank, 'This is blank' , (x,y), cv2.FONT_HERSHEY_COMPLEX, 2, (255,255,255), 3) -> writes a white text of fontsize 2px and thickness 3 px in (x,y) location
+
+
+
+"Image Transformations"
+--> For translation, we define T matrix as 
+T  = np.float32 ([[1, 0, width/4],[0, 1, height/4]])
+cv2.warpAffine(input, T, (width,height))
+
+--> For rotation,
+rotation_matrix = cv2.getRotationMatrix2D((rotation_center_x, rotation_center_y), rotation_angle, scale)
+rotated_img = cv2.warpAffine(input, rotation_matrix, (width,height))
+
+cv2.transpose(input) --> this is similar to transpose of a matrix (90 degree rotation)
+
+-> Perspective Transform
+points_A = np.float32([[x1,y1],[x2,y2],[x3,y3],[x4,y4]])
+points_B = np.float32([[xp1,yp1],[xp2,yp2],[xp3,yp3],[xp4,yp4]])
+M = cv2.getPerspectiveTransform(points_A, points_B)
+warped = cv2.warpPerspective(image, M, (final_width,final_height))
+
+
+
+-> Image Resizing Tips
+*various interpolation_constants
+cv2.INTER_AREA -> Good for shrinking and down sampling
+cv2.INTER_NEAREST -> Fastest
+cv2.INTER_LINEAR -> Good for zooming and up sampling (default)
+cv2.INTER_CUBIC -> Better
+cv2.INTER_LANCZOS4 -> Best
+
+
+cv2.resize(image,dsize(outputimage), fx=xscale, fy=yscale, interpolation_constants)
+Ex. cv2.resize(input,None, fx=2, fy=2, cv2.INTER_CUBIC)
+Ex. cv2.resize(input, (1024,768), cv2.INTER_LANCZOS4)
+
+
+
+"Image pyramiding" (50% upscaling/downscaling)
+downby50 = cv2.pyrdown(input) -> blurs and image and downsamples it
+uptwice = cv2.pyrup(input) -> upsamples and image and blurs it
+
+
+
+"Image cropping" (uses numpy slicing)
+height, width = input.shape[:2]
+startrow, startcol = int(height*.25) , int(width*.25)
+endrow, endcol = int(height*.75), int(width*.75)
+cropped_img = input[startrow : endrow, startcol : endcol]
+
+
+
+"Arithmetic operations"
+cv2.add(image1, image2)  # image1 and image2 should have same dimensions
+cv2.subtract(image1,image2)
+
+"Bitwise operations and masking" [Note: image1 and image2 should be of the same sizes]
+cv2.bitwise_and(image1,image2)
+cv2.bitwise_or(image1,image2)
+cv2.bitwise_xor(image1,image2)
+cv2.bitwise_not(image1) -> equivalent to creating negative of an image
+
+
+
+"Convolution and Blurring"
+kernel = np.ones((7,7),np.float32)/49
+cv2.filter2D(image, -1, kernel) -> if ddepth = -1, the resulting image is same as that of src.depth() For ex. src.depth()= CV_32F
+cv2.blur(image,(3,3)) -> blurs using 3x3 box filter
+cv2.GaussianBlur(image, (7,7), 0) -> blurs using Gausssian kernel of size 7x7 and 0 standard deviation
+cv2.medianBlur(image,5) -> median filtering
+cv2.bilateralFilter(image,9,75,75) -> bilateral filtering (slower) -> blurs only those pixels similar to central pixels (preserves edges).
+
+
+
+"Image denoising"
+cv2.fastNlMeansDenoisingColored(image,None,6,6,7,21) -> cv2.fastNlMeansDenoisingColored(src,dst,filter_strength(h) 5-10 is usually a good range, h for colorcomponents usually 10, templatesize, searchwindowsize)
+
+
+
+"Image sharpening"
+kernel_sharp = np.array([[-1, -1 , -1],[-1, 9, -1],[-1, -1 ,-1]])
+cv2.filter2D(image,-1,kernel_sharp) -> ddepth = -1
+
+
+"Thresholding, Binarization and Adaptive Thresholding" [NOTE: Image needs to be changed to grayscale before thresholding]
+Threshold Type:
+CV2.THRESH_BINARY -> Most Common -> Everything above threshold value goes to white
+CV2.THRESH_BINARY_INV -> Most Common -> Everything above threshold value goes to black
+CV2.THRESH_TRUNC -> Values above threshold values are held(truncated) at threshold value
+CV2.THRESH_TOZERO -> values below threshold value goes to black and above threshold values remain unchanged
+CV2.THRESH_TOZERO_INV -> reverse of TOZERO
+
+cv2.threshold(image, Threshold Value, Max Value, Threshold Type)
+
+Adaptive Type:
+ADAPTIVE_THRESH_MEAN_C -> based on mean of the neighborhood pixels
+ADAPTIVE_THRESH_GAUSSIAN_C -> weighted sum of neighborhood pixels
+THRESH_OTSU -> uses cv2.threshold function -> robust
+
+cv2.adaptiveThreshold(image, Max value, Adaptive Type, Threshold Type, Block Size, Constant to be subtracted from mean)
+[Note: Block size needs to be odd number!]
+
+
+"Morphological Operations"
+Dilation -> Add pixels to the boundaries of objects in an image
+Erosion -> Removes pixels at the boundaries of objects in an image
+Opening -> Erosion followed by  dilation
+Closing -> Dilation followed by erosion
+
+kernel = np.ones( (5,5), np.uint8)
+cv2.erode(image, kernel, iterations = 1) 
+cv2.dilate(image, kernel, iterations = 1)
+cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel)
+cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel)
+
+"Edge Detection and Image Gradients"
+horzedges = cv2.sobel(image, cv2.CV_64F, 0, 1, ksize=5)
+vertedges = cv2.sobel(image, cv2.CV_64F, 1, 0, ksize=5)
+sobel = cv2.bitwise_or(horzedges, vertedges);
+
+laplacian = cv2.Laplacian(image, cv2.CV_64F)
+cv2.Canny(image,20,170) -> cv2.canny(image,threshold1, threshold2)
+
+"Image Segmentation"
+
+-> Contours (Quite useful for segmentation/detection and shape analysis)
+hierarchy types: determines child parent relationship like contours within contours
+CV2.RETR_LIST -> Retrieves all contours
+CV2.RETR_EXTERNAL -> Retrieves external and outer contours only
+CV2.RETR_COMP -> Retrieves all in a 2-level hierarchy
+CV2.RETR_TREE > Retrieves all in full hierarchy
+[NOTE: hierarchy are stored in the following format -> [Next, Previous, First child, Parent] ] 
+
+approximations types:
+cv2.CHAIN_APPROX_SIMPLE -> stores only start and end points (good fit for line like contours)
+cv2.CHAIN_APPROX_NONE -> stores all countour points
+
+contours, hierarchy = cv2.findContours(grayimage, hierarchy, approximations)
+ [Note: this function changes the original grayimage. To avoid that use grayimage.copy()]
+[Note: OpenCV stores contours are lists of lists. Contours are points throughout the contours. There are several approximation methods to store these contours]
+print ('Numbers of contours found = ', len(contours))
+cv2.drawContours(grayimage, contours, -1, (0,255,0), 3) -> -1 is to draw all contours found or you can index them as 1,2,3 to draw specific contours
+
+-> Sorting Contours
+Sorting by Area  -> eliminate short contours that may be noise and extract largest contours
+Sorting by Spatial Position ->  uses contour centroid to sort left to right
+
+
+
+
+
+
+
+
+
+

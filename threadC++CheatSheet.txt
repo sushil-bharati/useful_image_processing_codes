@@ -1,0 +1,191 @@
+Key points:
+(1) Spawning a new thread is easier than spawning a new process.
+(2) If a main thread and a child thread shares some common process (for. ex. std::cout) , then main thread lives till child thread access that resource.
+(3) once detached, thread is hard to join.
+(4) parameter to a thread is always passed by value! use std::ref(var) to pass it by reference - WARN can cause problems. Best:: use std::move(var)
+(5) each thread has identification number associated with it --> thread_obj.get_id() [for main thread --> std::this_thread.get_id()]
+(6) mutex helps to share the common resources among multiple threads, avoids race condition
+(7) use std::unique_lock<std::mutex> locker(mu) followed by locker.unlock() instead of std::lock_guard<std::mutex> locker(mu) 
+	for locking/unlocking mutex multiple times (like in loop)
+
+std::thread t1(func);
+t1.join() // this will wait for t1 to finish 
+t1.detach() // this will create a daemon process t1, memory resources free is handled by std::thread automatically
+t2.isjoinable() // checks if you can join (useful when you have detached your thread before)
+
+>> You may use try-catch block to make sure .join does not crash your code:
+try 
+{
+    std::thread t1(func);
+}
+catch (...)
+{
+    t1.join();
+    throw;
+}	
+
+>> Here is a sample code that uses mutex to access common std::cout among threads
+
+std::mutex mu;
+void shared_func(msg)
+{
+	std::lock_guard<std::mutex> guard(mu); // each thread locks its own mutex, unlocks when out of scope
+	std::cout << msg << std::end;
+}
+
+>> Above sample code however does not fully protect std::cout resource as it is a global variable
+>> To fully protect resources from outside influence, use mutex, here is the sample code 
+
+Class FullyProtectedMutexApp
+{
+	private:
+		std::mutex mu;
+		ofstream f; // protected resources 
+	public:
+		void shared_func(msg)
+		{
+			std::lock_guard<std::mutex> guard(mu);
+			f << msg << std::endl;
+		}
+	// NEVER CREATE BELOW METHODS WHICH COMPROMISES ACCESS OF 'f'
+		void outfunc(void somefunc(ofstream&))
+		{
+			somefunc(f)
+		}
+		
+		ofstream& getf()
+		{
+			return f;
+		}
+};
+
+
+>> Classic Deadlock sample code when using two mutex -> 'func1' will lock 'mu' and wait for 'mu2' while 'func2' will lock 'mu2' and wait for 'mu'
+
+Class DeadlockSituation
+{
+	private:
+		std::mutex mu;
+		std::mutex mu2;
+		ofstream f; // protected resources 
+	public:
+		void shared_func1 (msg)
+		{
+			std::lock_guard<std::mutex> guard(mu);
+			std::lock_guard<std::mutex> guard(mu2);
+			f << msg << std::endl;
+		}
+		
+		void shared_func2 (msg)
+		{
+			std::lock_guard<std::mutex> guard(mu2);
+			std::lock_guard<std::mutex> guard(mu);
+			f << msg << std::endl;
+		}
+};
+
+To fix this: 
+Class DeadlockFree
+{
+	private:
+		std::mutex mu;
+		std::mutex mu2;
+		ofstream f; // protected resources 
+	public:
+		void shared_func1 (msg)
+		{
+			std::lock(mu, mu2); // locks mu an mu2 using deadlock avoidance algorithm
+			std::lock_guard<std::mutex> guard(mu, std::adopt_lock); // adopt to ownership
+			std::lock_guard<std::mutex> guard(mu2, std::adopt_lock); // adopt to ownership
+			f << msg << std::endl;
+		}
+		
+		void shared_func2 (msg)
+		{
+			std::lock(mu, mu2);
+			std::lock_guard<std::mutex> guard(mu2);
+			std::lock_guard<std::mutex> guard(mu);
+			f << msg << std::endl;
+		}
+};
+
+>> Tips to avoid deadlock 
+(1) Prefer locking single mutex at a time.
+(2) Avoid locking a mutex and calling a user provided function (as this function may try to lock the other mutex).
+(3) Use std::lock() to lock more than one mutex.
+(4) If not possible to use std::lock(), lock them in same order across functions.
+
+
+>> If you want some operations to occur only once, you can use std::call_once 
+std::once_flag _flag;
+std:call_once(_flag, [&](){_f.open("log.txt"}); // log.txt will be opened only once
+
+
+>> Sample code showing use of std::conditional_variable cond and std::unique_lock<std::mutex>
+
+std::queue q;
+std::mutex mu;
+std::conditional_variable cond;
+
+void thread1()
+{
+	while (true)
+	{
+		std::unique_lock(std::mutex) locker(mu);		
+		q.push(4);
+		locker.unlock();
+		cond.notify(); // notify 1 waiting thread (use cond.notify_all() to notify all waiting threads)
+	}
+}
+
+void thread2()
+{
+	while (true)
+	{
+		std::unique_lock(std::mutex) locker(mu);
+		cond.wait(locker, [](){return !q.empty()}); // unlocks mutex and waits for notification , second param checks spurious wake
+		q.pop()
+		locker.unlock();
+		
+	}
+}
+		
+>> Sample code demonstrating std::future and std::async (prevents use of global variables and mutex)
+	
+int func1(int a)
+{
+	return a*2;
+}
+
+int main()
+{
+	std::future<int> f = std::async(std::launch::async, func1, 12); // std::launch::deferred if no thread required but delay func1 call until get
+	int x = f.get(); // thread gets executed, get can be called ONLY ONCE per future 'f'
+	std::cout << x << std::endl;
+}
+
+
+>> Using callable functions using std::thread
+
+class A{
+public:
+	void f(int x, char c) {}
+	long g(double x) {return 0;}
+	int operator()(int N){ return 0; }
+};
+
+void foo(int x) {}
+
+int main()
+{
+	A a;
+	std::thread t1(a,6); // copy of a in diff thread
+	std::thread t2(std::ref(a), 6);	// a() in diff thread
+	std::thread t3(A(), 6);// temp A in diff thread
+	std::thread t4([](int x){return x*x}, 6);
+	std::thread t5(foo, 7);
+	std::thread t6(&A::f, a, 8, 'w');// copy of a.f(8, 'w') in diff thread
+	std::thread t7(&A::d, &a, 8, 'w');// a.f(8, 'w') in diff thread
+	std::thread t8(std::move(a), 6); // a is no longer available in main
+	// you can also use std::bind , std::async and std::call_once to do the same
+}

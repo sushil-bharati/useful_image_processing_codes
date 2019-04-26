@@ -31,6 +31,16 @@ do explain what the commit does (not how or why!)
 be consistent in how you write your commit messages!
 "This commit will...". However, you finish that phrase, use that as your commit message.
 
+Git message templates:
+
+#    feat     (new feature)
+#    fix      (bug fix)
+#    refactor (refactoring code)
+#    style    (formatting, missing semi colons, etc; no code change)
+#    docs     (changes to documentation)
+#    test     (adding tests)
+#    chore    (updating grunt tasks etc)
+
 ## Do not
 
 do not explain why the changes are made (more on this below)
